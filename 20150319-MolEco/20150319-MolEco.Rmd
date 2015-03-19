@@ -4,7 +4,7 @@ author: "Leo Lahti"
 date: "19/3/2015"
 output: 
   ioslides_presentation:
-    highlight: ioslides
+    highlight: slidify
     duration: 45
     footer: "Copyright (C) 2015, Leo Lahti"
 ---
@@ -40,7 +40,7 @@ library(netresponse)
 
 ## Hill Index / True Diversity / General Diversity
 
-${}^q{D} = \frac{1}{M_{q-1}} = \frac{1}{\sqrt[q-1]{\sum_{i=1}^R p_i p_i^{q-1}} } = (\sum_{i=1}^R p_i^{q})^{1/(1-q)}$
+${}^q{D} = \frac{1}{M_{q-1}} = \frac{1}{\sqrt[q-1]{\sum_{i=1}^R p_i^q \frac{1}{p_i} }} = (\sum_{i=1}^R p_i^{q})^{1/(1-q)}$
 
  * $M_{q−1}$: weighted average relative abundance 
  * $R$: richness (total number of species)
@@ -86,7 +86,7 @@ With small $q$, weight is given to rare species:
  * q = 2: Inverse Simpson Diversity
  * $q \rightarrow \infty$: Inverse Berger–Parker 
  
-Increasing $q$ increases the weight of the most abundant species and decreases diversity.
+Increasing $q$ increases the weight of the most abundant species, decreasing diversity.
 
 
 ## Richness (q=0): Total number of species
@@ -95,23 +95,11 @@ ${}^0{D} = (\sum_{i=1}^R p_i^{0})^{1/(1-0)} = \sum_{i=1}^R 1 = R$
 
 Equal weight given to each species, regardless of abundance
 
-
-## Richness (q=0)
-
-```{r, echo=FALSE, message=FALSE}
-# Generate simulated data
-set.seed(3)
-par(mfcol = c(2,3))
-for (Nc in c(2, 3, 5)) {
-  res <- generate.toydata(Dim = 2, Ns = 10, Nc = Nc, sd0 = 3, rgam.shape = .3)
-  D <- res$data
-  #component.means <- res$means
-  #component.sds   <- res$sds
-  species <- sample(1:Nc, nrow(D), replace = T)
-  R = sum(table(species)>0)
-  plot(D, col = species, pch = 19, cex = 2, main = paste("Richness", R), cex.main = 2)
-  barplot(rev(sort(table(species))), las = 1)
-}
+```{r diversity-example3, echo=FALSE, message=FALSE, warning=FALSE}
+p <- ggplot(dfmf, aes(x = SampleID, y = RelativeAbundance, fill = Taxon))
+p <- p + geom_bar(position = "stack", stat = "identity")
+p <- p + ggtitle("Relative abundances")
+print(p)
 ```
 
 
@@ -121,13 +109,14 @@ Diversity = Richness * Evenness
 
 ```{r, echo=FALSE, message=FALSE}
 set.seed(5)
+Nc <- 5
+n <- 15
 speciess <- list()
 speciess[[1]] <- sample(rep(1:5, 3))
-speciess[[2]] <- sample(1:Nc, nrow(D), replace = T)
+speciess[[2]] <- sample(1:Nc, n, replace = T)
 speciess[[3]] <- c(rep(1, 10), rep(2, 2), 3:5)
 set.seed(3)
 par(mfcol = c(2,3))
-Nc <- 5
 for (i in 1:length(speciess)) {
   res <- generate.toydata(Dim = 2, Ns = 15, Nc = Nc, sd0 = 3, rgam.shape = .3)
   D <- res$data
@@ -141,14 +130,14 @@ for (i in 1:length(speciess)) {
 
 ## Shannon Diversity (q=1)
 
-Shannon–Wiener / Shannon–Weaver / Shannon entropy. The general diversity is undefined but the limit \(q \rightarrow 1\) is well defined:
+Shannon–Wiener / Shannon–Weaver / Shannon-Weaner / Shannon entropy. The general diversity is undefined but the limit \(q \rightarrow 1\) is well defined:
 
 ${}^1{D} = exp(-\sum_{i=1}^R p_i ln (p_i))$
 
-Exponential of the Shannon entropy. Effective species number. Quantifies uncertainty: difficulty of correctly predicting the next observed species.
+Exponential of the Shannon entropy. Effective species number. Quantifies uncertainty: difficulty of predicting next observed species:
 
- * When all species equally common, $p_i = \frac{1}{R} \forall i$, and ${}^1{D} = ln(R)$   
- * With increasing dominance by one type, Shannon approaches 0 (no uncertainty). 
+ * All species equally common: $p_i = \frac{1}{R} \forall i$, and ${}^1{D} = ln(R)$   
+ * Increasing dominance by one type: Shannon approaches 0 (no uncertainty). 
  
 
 ## Shannon Diversity (q=1)
@@ -164,11 +153,15 @@ for (i in 1:length(speciess)) {
   res <- generate.toydata(Dim = 2, Ns = 15, Nc = Nc, sd0 = 3, rgam.shape = .3)
   D <- res$data
   species <- speciess[[i]]
-  R = diversity(species, "shannon")
+  tab <- table(species)
+  H <- diversity(tab, "shannon")
   plot(D, col = species, pch = 19, cex = 2, xaxt = "n", xlab = "", main = paste("Richness", length(unique(species))))
-  barplot(rev(sort(table(species))), las = 1, main = paste("Diversity", round(R, 1)))
+  barplot(rev(sort(tab)), las = 1, main = paste("Diversity", round(H, 1)))
 }
 ```
+
+## Diversity Formation
+
 
 ## Rényi entropy
 
@@ -176,7 +169,7 @@ Generalization of the Shannon entropy to other values of q than unity.
 
 ${}^q{H} = ln({}^q{D})$
 
-## Simpson Diversity
+## Simpson Index
 
 (Herfindahl / Herfindahl–Hirschman / HH / Hunter–Gaston Index). **Probability that randomly sampled individuals represent the same species:** $\lambda \sim \sum_{i=1}^R p_i^2$. This increases with species dominance. Therefore inverse indices are used for diversity.
 
@@ -219,7 +212,7 @@ print(p)
 
 ## Summary: General ($\alpha$) Diversity
 
-${}^q{D} = \frac{1}{M_{q-1}} = \frac{1}{\sqrt[q-1]{\sum_{i=1}^R p_i p_i^{q-1}}} = (\sum_{i=1}^R p_i^{q})^{1/(1-q)}$
+${}^q{D} = \frac{1}{M_{q-1}} = (\sum_{i=1}^R p_i^{q})^{1/(1-q)}$
 
 With small $q$, weight is given to rare species:
 
