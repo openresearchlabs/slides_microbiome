@@ -145,13 +145,15 @@ Shannon–Wiener / Shannon–Weaver / Shannon entropy. The general diversity is 
 
 ${}^1{D} = exp(-\sum_{i=1}^R p_i ln (p_i))$
 
-Exponential of the Shannon entropy / Effective species number. Quantifies uncertainty (information content): difficulty of correctly predicting the next observed species (taken randomly from the data).
+Exponential of the Shannon entropy. Effective species number. Quantifies uncertainty: difficulty of correctly predicting the next observed species.
 
  * When all species equally common, $p_i = \frac{1}{R} \forall i$, and ${}^1{D} = ln(R)$   
  * With increasing dominance by one type, Shannon approaches 0 (no uncertainty). 
  
 
 ## Shannon Diversity (q=1)
+
+Quantifies uncertainty: difficulty of correctly predicting the next observed species.
 
 ```{r, echo=FALSE, message=FALSE}
 library(vegan)
@@ -176,7 +178,7 @@ ${}^q{H} = ln({}^q{D})$
 
 ## Simpson Diversity
 
-(Herfindahl / Herfindahl–Hirschman / HH / Hunter–Gaston Index). *Probability that randomly sampled individuals represent the same species:* $\lambda \sim \sum_{i=1}^R p_i^2$. This increases with species dominance. Therefore inverse indices are used for diversity.
+(Herfindahl / Herfindahl–Hirschman / HH / Hunter–Gaston Index). **Probability that randomly sampled individuals represent the same species:** $\lambda \sim \sum_{i=1}^R p_i^2$. This increases with species dominance. Therefore inverse indices are used for diversity.
 
 ```{r, echo=FALSE, message=FALSE, fig.width=8, fig.height=4}
 library(netresponse)
@@ -194,17 +196,17 @@ plot(D, col = speciess[[2]], pch = 19, cex = 2)
 
 ## Inverse Simpson Diversity
 
-Gini-Simpson / probability of interspecific encounter (PIE) / Gibbs–Martin / Blau Index: probability that the two entities represent *different* types:
+**Gini-Simpson** / probability of interspecific encounter (PIE) / Gibbs–Martin / Blau Index: probability that the two entities represent **different** types: $1 - \lambda$
 
-$1 - \lambda$
+**Inverse Simpson** ${}^2{D} = \frac{1}{\sqrt[2-1]{\sum_{i=1}^R p_i p_i^{2-1}}} = \frac{1}{\sum_{i=1}^R p_i^2} = \frac{1}{\lambda}$
 
+```{r, echo=FALSE, message=FALSE, fig.width=8, fig.height=4}
+par(mfrow = c(1,2))
+plot(D, col = speciess[[1]], pch = 19, cex = 2)
+plot(D, col = speciess[[2]], pch = 19, cex = 2)
+```
 
-Inverse Simpson: 
-
-${}^2{D} = \frac{1}{\sqrt[2-1]{\sum_{i=1}^R p_i p_i^{2-1}}} = \frac{1}{\sum_{i=1}^R p_i^2} = \frac{1}{\lambda}$
-
-
-## Berger–Parker 
+## Berger–Parker Index
 
 Maximum relative abundance: $max(p_i) = \frac{1}{{}^{\infty}{D}}$
 
@@ -215,13 +217,28 @@ p <- p + ggtitle("Relative abundances")
 print(p)
 ```
 
+## Summary: General ($\alpha$) Diversity
+
+${}^q{D} = \frac{1}{M_{q-1}} = \frac{1}{\sqrt[q-1]{\sum_{i=1}^R p_i p_i^{q-1}}} = (\sum_{i=1}^R p_i^{q})^{1/(1-q)}$
+
+With small $q$, weight is given to rare species:
+
+ * q = 0: Species Richness (total count)
+ * q = 1: Shannon Diversity (information content)
+ * q = 2: Inverse Simpson (sampling probability)
+ * $q \rightarrow \infty$: Inverse Berger–Parker (most abundant species)
+ 
+Increasing $q$ increases the weight of the most abundant species and decreases diversity.
+
+
 ## Alpha, Beta, Gamma Diversity
 
-![](pro62_alpha1-2.png)
+<img src="pro62_alpha1-2.png" width="700px" height="500px" />
 
-Title
-====================================
+
+## Source code for these slides:
+
+https://github.com/microbiome/slides/
+
 ![alt text](github-logo.png)
-***
-This text will appear to the right
 
