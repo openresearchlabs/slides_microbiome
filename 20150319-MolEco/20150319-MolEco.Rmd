@@ -1,0 +1,227 @@
+---
+title: "MolEco March 19, 2015"
+author: "Leo Lahti"
+date: "19/3/2015"
+output: 
+  ioslides_presentation:
+    highlight: ioslides
+    duration: 45
+    footer: "Copyright (C) 2015, Leo Lahti"
+---
+
+
+```{r, echo=FALSE, message=FALSE}
+library(rmarkdown); library(knitr)
+opts_chunk$set(cache=FALSE)
+```
+
+
+## Outline
+
+- Hill / General / True Diversity
+- Richness
+- Evenness
+- Shannon Diversity
+- Rényi entropy
+- (Inverse) Simpson
+- Berger–Parker
+- Alpha, Beta and Gamma Diversity
+
+```{r, echo=FALSE, message=FALSE}
+require(xtable)
+require(ggplot2)
+require(microbiome)
+source("~/scripts/R/knitting.R")
+##load("init.RData")
+#source("funcs.R")
+library(netresponse)
+```
+
+
+## Hill Index / True Diversity / General Diversity
+
+${}^q{D} = \frac{1}{M_{q-1}} = \frac{1}{\sqrt[q-1]{\sum_{i=1}^R p_i p_i^{q-1}} } = (\sum_{i=1}^R p_i^{q})^{1/(1-q)}$
+
+ * $M_{q−1}$: weighted average relative abundance 
+ * $R$: richness (total number of species)
+ * $p_i$: Relative abundance of the $i^{th}$ species 
+ * $q$: order of diversity. Sensitivity to rare species. 
+
+## $M_{q−1}$: weighted average relative abundance 
+
+```{r diversity-example, echo=FALSE, message=FALSE, warning=FALSE}
+library(microbiome)
+# Define data path (you can replace data.directory with your own path)
+data.directory <- system.file("extdata", package = "microbiome")
+x <- read.profiling(level = "L1", method = "frpa", 
+                	  data.dir = data.directory, 
+	      	       	  log10 = FALSE)  
+x <- x[c("Actinobacteria", "Bacilli", "Bacteroidetes", "Clostridium cluster IV", "Verrucomicrobia"), ]
+rel <- relative.abundance(x)
+
+# Rearrange the data for ggplot visualization tools
+library(reshape)
+dfm <- melt(rel)
+colnames(dfm) <- c("Taxon", "SampleID", "RelativeAbundance")
+
+# Provide barplot visualizations of relative abundances for some randomly selected samples
+library(ggplot2)
+suppressMessages(library(dplyr))
+dfmf <- filter(dfm, SampleID %in% c("Sample.1", "Sample.10", "Sample.15"))
+p <- ggplot(dfmf, aes(x = SampleID, y = RelativeAbundance, fill = Taxon))
+p <- p + geom_bar(position = "stack", stat = "identity")
+p <- p + ggtitle("Relative abundances")
+print(p)
+```
+
+
+## Hill Index or True / General Diversity
+
+${}^q{D} = \frac{1}{M_{q-1}} = \frac{1}{\sqrt[q-1]{\sum_{i=1}^R p_i p_i^{q-1}}} = (\sum_{i=1}^R p_i^{q})^{1/(1-q)}$
+
+With small $q$, weight is given to rare species:
+
+ * q = 0: Total Species Richness
+ * q = 1: Shannon Diversity
+ * q = 2: Inverse Simpson Diversity
+ * $q \rightarrow \infty$: Inverse Berger–Parker 
+ 
+Increasing $q$ increases the weight of the most abundant species and decreases diversity.
+
+
+## Richness (q=0): Total number of species
+
+${}^0{D} = (\sum_{i=1}^R p_i^{0})^{1/(1-0)} = \sum_{i=1}^R 1 = R$
+
+Equal weight given to each species, regardless of abundance
+
+
+## Richness (q=0)
+
+```{r, echo=FALSE, message=FALSE}
+# Generate simulated data
+set.seed(3)
+par(mfcol = c(2,3))
+for (Nc in c(2, 3, 5)) {
+  res <- generate.toydata(Dim = 2, Ns = 10, Nc = Nc, sd0 = 3, rgam.shape = .3)
+  D <- res$data
+  #component.means <- res$means
+  #component.sds   <- res$sds
+  species <- sample(1:Nc, nrow(D), replace = T)
+  R = sum(table(species)>0)
+  plot(D, col = species, pch = 19, cex = 2, main = paste("Richness", R), cex.main = 2)
+  barplot(rev(sort(table(species))), las = 1)
+}
+```
+
+
+## Richness vs. Evenness ?
+
+Diversity = Richness * Evenness
+
+```{r, echo=FALSE, message=FALSE}
+set.seed(5)
+speciess <- list()
+speciess[[1]] <- sample(rep(1:5, 3))
+speciess[[2]] <- sample(1:Nc, nrow(D), replace = T)
+speciess[[3]] <- c(rep(1, 10), rep(2, 2), 3:5)
+set.seed(3)
+par(mfcol = c(2,3))
+Nc <- 5
+for (i in 1:length(speciess)) {
+  res <- generate.toydata(Dim = 2, Ns = 15, Nc = Nc, sd0 = 3, rgam.shape = .3)
+  D <- res$data
+  species <- speciess[[i]]
+  R = sum(table(species)>0)
+  plot(D, col = species, pch = 19, cex = 2, main = paste("Richness", R), cex.main = 2)
+  barplot(rev(sort(table(species))), las = 1)
+}
+```
+
+
+## Shannon Diversity (q=1)
+
+Shannon–Wiener / Shannon–Weaver / Shannon entropy. The general diversity is undefined but the limit \(q \rightarrow 1\) is well defined:
+
+${}^1{D} = exp(-\sum_{i=1}^R p_i ln (p_i))$
+
+Exponential of the Shannon entropy / Effective species number. Quantifies uncertainty (information content): difficulty of correctly predicting the next observed species (taken randomly from the data).
+
+ * When all species equally common, $p_i = \frac{1}{R} \forall i$, and ${}^1{D} = ln(R)$   
+ * With increasing dominance by one type, Shannon approaches 0 (no uncertainty). 
+ 
+
+## Shannon Diversity (q=1)
+
+```{r, echo=FALSE, message=FALSE}
+library(vegan)
+set.seed(3)
+par(mfcol = c(2,3))
+Nc <- 5
+for (i in 1:length(speciess)) {
+  res <- generate.toydata(Dim = 2, Ns = 15, Nc = Nc, sd0 = 3, rgam.shape = .3)
+  D <- res$data
+  species <- speciess[[i]]
+  R = diversity(species, "shannon")
+  plot(D, col = species, pch = 19, cex = 2, xaxt = "n", xlab = "", main = paste("Richness", length(unique(species))))
+  barplot(rev(sort(table(species))), las = 1, main = paste("Diversity", round(R, 1)))
+}
+```
+
+## Rényi entropy
+
+Generalization of the Shannon entropy to other values of q than unity. 
+
+${}^q{H} = ln({}^q{D})$
+
+## Simpson Diversity
+
+(Herfindahl / Herfindahl–Hirschman / HH / Hunter–Gaston Index). *Probability that randomly sampled individuals represent the same species:* $\lambda \sim \sum_{i=1}^R p_i^2$. This increases with species dominance. Therefore inverse indices are used for diversity.
+
+```{r, echo=FALSE, message=FALSE, fig.width=8, fig.height=4}
+library(netresponse)
+Nc <- 3
+set.seed(5)
+speciess <- list()
+speciess[[1]] <- sample(rep(1:5, 10))
+speciess[[2]] <- c(rep(1, 40), rep(2, 5), rep(3, 5))
+res <- generate.toydata(Dim = 2, Ns = 50, Nc = Nc, sd0 = 3, rgam.shape = .5)
+D <- res$data
+par(mfrow = c(1,2))
+plot(D, col = speciess[[1]], pch = 19, cex = 2)
+plot(D, col = speciess[[2]], pch = 19, cex = 2)
+```
+
+## Inverse Simpson Diversity
+
+Gini-Simpson / probability of interspecific encounter (PIE) / Gibbs–Martin / Blau Index: probability that the two entities represent *different* types:
+
+$1 - \lambda$
+
+
+Inverse Simpson: 
+
+${}^2{D} = \frac{1}{\sqrt[2-1]{\sum_{i=1}^R p_i p_i^{2-1}}} = \frac{1}{\sum_{i=1}^R p_i^2} = \frac{1}{\lambda}$
+
+
+## Berger–Parker 
+
+Maximum relative abundance: $max(p_i) = \frac{1}{{}^{\infty}{D}}$
+
+```{r diversity-example2, echo=FALSE, message=FALSE, warning=FALSE}
+p <- ggplot(dfmf, aes(x = SampleID, y = RelativeAbundance, fill = Taxon))
+p <- p + geom_bar(position = "stack", stat = "identity")
+p <- p + ggtitle("Relative abundances")
+print(p)
+```
+
+## Alpha, Beta, Gamma Diversity
+
+![](pro62_alpha1-2.png =200x)
+
+Title
+====================================
+![alt text](github-logo.png)
+***
+This text will appear to the right
+
