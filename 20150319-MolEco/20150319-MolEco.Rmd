@@ -217,7 +217,7 @@ print(p)
 
 ## Alpha, Beta, Gamma Diversity
 
-![](pro62_alpha1-2.png =200x)
+![](pro62_alpha1-2.png)
 
 Title
 ====================================
